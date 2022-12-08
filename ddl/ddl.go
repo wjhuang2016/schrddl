@@ -430,7 +430,7 @@ func (c *testCase) execute(ctx context.Context, executeDDL ExecuteDDLFunc, exeDM
 		var err1 error
 		for {
 			go func() {
-				tk := time.Tick(time.Second)
+				tk := time.Tick(1000 * time.Second)
 				select {
 				case <-ctx.Done():
 					return

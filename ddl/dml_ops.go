@@ -193,10 +193,10 @@ func (c *testCase) execDMLInTransactionSQL(taskCh chan *dmlJobTask) error {
 	return nil
 }
 
-const dmlSizeEachRound = 10
+const dmlSizeEachRound = 1000
 
 func (c *testCase) generateInsert() error {
-	for i := 0; i < dmlSizeEachRound; i++ {
+	for i := 0; i < dmlSizeEachRound*20; i++ {
 		for columnStrategy := ddlTestInsertColumnStrategyBegin + 1; columnStrategy < ddlTestInsertColumnStrategyEnd; columnStrategy++ {
 			// Note: `useSetStatement` is commented out since `... VALUES ...` SQL will generates column conflicts with add / drop column.
 			// We always use `... SET ...` syntax currently.
@@ -545,7 +545,7 @@ type ddlTestDeleteConfig struct {
 }
 
 func (c *testCase) generateDelete() error {
-	for i := 0; i < dmlSizeEachRound; i++ {
+	for i := 0; i < 10; i++ {
 		for whereStrategy := ddlTestWhereStrategyBegin + 1; whereStrategy < ddlTestWhereStrategyEnd; whereStrategy++ {
 			config := ddlTestDeleteConfig{
 				whereStrategy: whereStrategy,

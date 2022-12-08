@@ -25,7 +25,7 @@ var globalCancelMu sync.Mutex
 var globalCheckDDLMu sync.Mutex
 
 func (c *testCase) generateDDLOps() error {
-	defaultTime := 2
+	defaultTime := 0
 	if err := c.generateCreateSchema(defaultTime); err != nil {
 		return errors.Trace(err)
 	}
@@ -38,7 +38,7 @@ func (c *testCase) generateDDLOps() error {
 	if err := c.generateRenameTable(defaultTime); err != nil {
 		return errors.Trace(err)
 	}
-	if err := c.generateTruncateTable(defaultTime); err != nil {
+	if err := c.generateTruncateTable(0); err != nil {
 		return errors.Trace(err)
 	}
 	if err := c.generateModifyTableComment(defaultTime); err != nil {
@@ -59,20 +59,20 @@ func (c *testCase) generateDDLOps() error {
 	if err := c.generateCreateView(defaultTime); err != nil {
 		return errors.Trace(err)
 	}
-	if err := c.generateAddIndex(10); err != nil {
+	if err := c.generateAddIndex(5); err != nil {
 		return errors.Trace(err)
 	}
 
 	if err := c.generateRenameIndex(defaultTime); err != nil {
 		return errors.Trace(err)
 	}
-	if err := c.generateDropIndex(defaultTime); err != nil {
+	if err := c.generateDropIndex(3); err != nil {
 		return errors.Trace(err)
 	}
 	if err := c.generateAddColumn(defaultTime); err != nil {
 		return errors.Trace(err)
 	}
-	if err := c.generateModifyColumn(5); err != nil {
+	if err := c.generateModifyColumn(0); err != nil {
 		return errors.Trace(err)
 	}
 	if err := c.generateDropColumn(defaultTime); err != nil {
@@ -81,7 +81,7 @@ func (c *testCase) generateDDLOps() error {
 	if err := c.generateSetDefaultValue(defaultTime); err != nil {
 		return errors.Trace(err)
 	}
-	if err := c.generateModifyColumn2(5); err != nil {
+	if err := c.generateModifyColumn2(0); err != nil {
 		return errors.Trace(err)
 	}
 	if err := c.generateMultiSchemaChange(defaultTime); err != nil {
@@ -547,7 +547,11 @@ func (c *testCase) execParaDDLSQL(taskCh chan *ddlJobTask, num int) error {
 			query = strings.Replace(query, "\\\"", "\"", -1)
 			if seqNum > 0 && query == fmt.Sprintf("\"%s\"", task.sql) {
 				// We need to update sqq_num.
+				startTs := time.Now()
 				for {
+					if time.Since(startTs) > 10*time.Second {
+						log.Errorf("globalDDLSeqNum %d, seqNum %d", globalDDLSeqNum, seqNum)
+					}
 					globalDDLSeqNumMu.Lock()
 					if seqNum != globalDDLSeqNum+1 {
 						// Wait for other gorountine to update
@@ -790,7 +794,7 @@ func (c *testCase) prepareAddTable(cfg interface{}, taskCh chan *ddlJobTask) err
 	sql += fmt.Sprintf("COMMENT '%s' CHARACTER SET '%s' COLLATE '%s'",
 		tableInfo.comment, charset, collate)
 
-	if rand.Intn(3) == 0 && partitionColumnName != "" {
+	if rand.Intn(300) == 0 && partitionColumnName != "" {
 		sql += fmt.Sprintf(" partition by hash(`%s`) partitions %d ", partitionColumnName, rand.Intn(10)+1)
 	}
 
@@ -1249,11 +1253,11 @@ func (c *testCase) prepareAddIndex(ctx interface{}, taskCh chan *ddlJobTask) err
 	index.signature = generateIndexSignture(index)
 
 	// check whether index duplicates
-	for _, idx := range table.indexes {
-		if idx.signature == index.signature {
-			return nil
-		}
-	}
+	//for _, idx := range table.indexes {
+	//	if idx.signature == index.signature {
+	//		return nil
+	//	}
+	//}
 
 	// build SQL
 	sql := fmt.Sprintf("ALTER TABLE `%s` ADD INDEX `%s` (", table.name, index.name)
