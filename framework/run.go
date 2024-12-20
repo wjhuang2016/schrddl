@@ -49,7 +49,7 @@ func createDBs(dbDSN string) []*sql.DB {
 }
 
 func createDBsForPrepare(dbAddr, dbName string) []*sql.DB {
-	dbs := make([]*sql.DB, 0, 2)
+	dbs := make([]*sql.DB, 0, 3)
 	db0, err := OpenDB(fmt.Sprintf("root:@tcp(%s)/%s", dbAddr, dbName), 20)
 	if err != nil {
 		log.Fatalf("[ddl] create db client error %v", err)
@@ -58,11 +58,19 @@ func createDBsForPrepare(dbAddr, dbName string) []*sql.DB {
 	if err != nil {
 		log.Fatalf("[ddl] create db client error %v", err)
 	}
+	dbsessioncache, err := OpenDB(fmt.Sprintf("root:@tcp(%s)/%s", dbAddr, "sessioncache"), 20)
+	if err != nil {
+		log.Fatalf("[ddl] create db client error %v", err)
+	}
 	dbcache.SetMaxOpenConns(32)
 	dbcache.SetMaxIdleConns(32)
+	dbsessioncache.SetMaxOpenConns(32)
+	dbsessioncache.SetMaxIdleConns(32)
+	dbsessioncache.SetConnMaxLifetime(time.Hour)
 	dbcache.SetConnMaxLifetime(time.Hour)
 	dbs = append(dbs, db0)
 	dbs = append(dbs, dbcache)
+	dbs = append(dbs, dbsessioncache)
 	return dbs
 }
 

@@ -48,6 +48,9 @@ var dmlIgnoreList = []string{
 	// unknown
 	"context canceled",
 	"cannot be pushed down",
+
+	"invalid",
+	"Invalid",
 }
 
 var ddlIgnoreList = []string{

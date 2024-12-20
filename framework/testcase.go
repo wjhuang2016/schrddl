@@ -329,7 +329,7 @@ func (c *testCase) dumpPrepare(prepare *sqlgenerator.Prepare) error {
 func (c *testCase) testPlanCache(ctx context.Context) error {
 	state := sqlgenerator.NewState()
 
-	dbNoCache, dbWithCache := c.dbs[0], c.dbs[1]
+	dbNoCache, dbWithCache, sessionWithCache := c.dbs[0], c.dbs[1], c.dbs[2]
 
 	prepareStmtCnt := 100
 	for i := 0; i < prepareStmtCnt; i++ {
@@ -340,7 +340,8 @@ func (c *testCase) testPlanCache(ctx context.Context) error {
 
 		_, err1 := dbNoCache.Exec(startSQL)
 		_, err2 := dbWithCache.Exec(startSQL)
-		if err1 != nil && err2 != nil {
+		_, err3 := sessionWithCache.Exec(startSQL)
+		if err1 != nil && err2 != nil && err3 != nil {
 			continue
 		}
 		if err := sqlgenerator.CheckError(err1, err2); err != nil {
@@ -361,6 +362,7 @@ func (c *testCase) testPlanCache(ctx context.Context) error {
 				return errors.Trace(err)
 			}
 			log.Info("Check table data passed")
+			log.Infof("WithCache: %d, NoCache: %d\n", withCache, noCache)
 		}
 
 		useQuery := rand.Intn(10) > 6
@@ -371,6 +373,11 @@ func (c *testCase) testPlanCache(ctx context.Context) error {
 			continue
 		}
 		useCache, err := prepare.UsePlanCache(dbWithCache)
+		if err != nil {
+			log.Warn("Check use cache failed, err = %s", err.Error())
+			continue
+		}
+		sessionUseCache, err := prepare.UsePlanCache(sessionWithCache)
 		if err != nil {
 			log.Warn("Check use cache failed, err = %s", err.Error())
 			continue
@@ -390,8 +397,14 @@ func (c *testCase) testPlanCache(ctx context.Context) error {
 			affectedTbls, _ := dump.ExtraFromSQL(prepare.SQLNoCache)
 			if err2 := c.CheckData(affectedTbls); err2 != nil {
 				c.dumpPrepare(prepare)
-				log.Fatal("Data inconsistent after DML")
+				log.Fatal("Data inconsistent after DML", err2)
 			}
+		}
+
+		if useCache != sessionUseCache {
+			c.dumpPrepare(prepare)
+			affectedTbls, _ := dump.ExtraFromSQL(prepare.SQLNoCache)
+			log.Fatal("Session cache inconsistent with global cache", affectedTbls[0])
 		}
 
 		if err != nil {

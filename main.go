@@ -70,6 +70,7 @@ func prepareEnv() {
 
 	initSQLs := []string{
 		"create database if not exists testcache",
+		"create database if not exists sessioncache",
 		"set GLOBAL tidb_enable_inl_join_inner_multi_pattern='ON'",
 		"set GLOBAL tidb_enable_instance_plan_cache=1",
 		"set global tidb_enable_global_index=true",
